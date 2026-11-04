@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>티어로그 · 영화 티어리스트</title>
+<style>
+  :root {
+    --bg: #f3f3f5;
+    --surface: #ffffff;
+    --surface-2: #f6f6f8;
+    --text: #1d1d22;
+    --muted: #7a7a85;
+    --faint: #a8a8b2;
+    --line: #ececf0;
+    --brand: #ff2f6e;
+    --brand-weak: #fff0f4;
+    --danger: #e5484d;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(20, 20, 30, .04), 0 6px 18px rgba(20, 20, 30, .06);
+    --font: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  input, textarea { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+  :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
+  svg.i { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  .app {
+    max-width: 480px; margin: 0 auto; min-height: 100vh; min-height: 100dvh;
+    background: var(--surface); position: relative;
+  }
+  @media (min-width: 520px) { .app { box-shadow: 0 0 0 1px var(--line), 0 10px 40px rgba(0, 0, 0, .06); } }
+
+  /* ---------- 공통 버튼 ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 44px; padding: 0 18px; border-radius: 12px; font-weight: 700; font-size: 15px;
+    transition: transform .08s, background .15s, opacity .15s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn.sm { height: 36px; padding: 0 14px; font-size: 14px; border-radius: 10px; }
+  .btn.full { width: 100%; }
+  .btn-primary { background: var(--brand); color: #fff; }
+  .btn-primary:disabled { background: #f3c4d2; cursor: default; transform: none; }
+  .btn-soft { background: var(--surface-2); color: var(--text); border: 1px solid var(--line); }
+  .btn-outline { border: 1px solid var(--brand); color: var(--brand); background: #fff; }
+  .btn-danger-ghost { color: var(--danger); background: #fff5f5; }
+  .btn-danger-ghost.armed { background: var(--danger); color: #fff; }
+  .icon-btn { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px; color: var(--text); }
+  .icon-btn:hover { background: var(--surface-2); }
+
+  /* ---------- 티어 색 ---------- */
+  .t-S { --tc: #ff2f6e; --tt: #fff; }
+  .t-A { --tc: #ff7a2f; --tt: #fff; }
+  .t-B { --tc: #ffc21a; --tt: #4a3500; }
+  .t-C { --tc: #22b573; --tt: #fff; }
+  .t-D { --tc: #4a8fe0; --tt: #fff; }
+  .tier-badge {
+    width: 34px; height: 34px; border-radius: 10px; display: inline-grid; place-items: center;
+    font-weight: 900; font-size: 17px; background: var(--tc); color: var(--tt); flex: none;
+  }
+  .tier-badge.big { width: 44px; height: 44px; font-size: 22px; border-radius: 12px; }
+  .tier-badge.xs { width: 20px; height: 20px; font-size: 11px; border-radius: 6px; }
+
+  .tier-pick { display: flex; gap: 8px; }
+  .tier-pick .tp {
+    flex: 1; height: 40px; border-radius: 10px; font-weight: 900; font-size: 16px;
+    border: 1.5px solid var(--line); color: var(--muted); background: #fff;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .tier-pick .tp:hover { border-color: var(--tc); color: var(--text); }
+  .tier-pick .tp.on { background: var(--tc); border-color: var(--tc); color: var(--tt); }
+
+  /* ---------- 포스터(임시 디자인) ---------- */
+  .poster {
+    position: relative; overflow: hidden; flex: none;
+    aspect-ratio: 2 / 3; border-radius: 6px; color: #fff;
+    background: linear-gradient(155deg, var(--p1), var(--p2));
+    display: flex; flex-direction: column; justify-content: flex-end;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .06);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+  }
+  .poster::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(120% 70% at 20% 0%, rgba(255, 255, 255, .28), transparent 60%),
+                linear-gradient(to top, rgba(0, 0, 0, .35), transparent 55%);
+  }
+  .poster > * { position: relative; }
+  .poster-sm { width: 46px; border-radius: 5px; justify-content: center; align-items: center; }
+  .poster-sm .p-initial { font-weight: 800; font-size: 19px; }
+  .poster-md { width: 100%; padding: 6px; }
+  .poster-md .p-title { font-weight: 800; font-size: 11px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .poster-md .p-year { font-size: 10px; opacity: .85; }
+  .poster-res { width: 72px; padding: 6px; }
+  .poster-res .p-title { font-weight: 800; font-size: 11px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .poster-res .p-year { font-size: 10px; opacity: .85; }
+  .poster-lg { width: 112px; padding: 10px; border-radius: 8px; }
+  .poster-lg .p-title { font-weight: 800; font-size: 15px; line-height: 1.25; }
+  .poster-lg .p-year { font-size: 12px; opacity: .85; }
+
+  /* ---------- 로그인 ---------- */
+  .login { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; padding: 56px 24px calc(28px + env(safe-area-inset-bottom)); }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 22px; letter-spacing: -.02em; }
+  .logo-mark {
+    width: 36px; height: 36px; border-radius: 10px; background: var(--brand); display: grid; gap: 3px;
+    padding: 8px 7px; align-content: center;
+  }
+  .logo-mark span { display: block; height: 4px; border-radius: 2px; background: #fff; }
+  .logo-mark span:nth-child(2) { width: 75%; opacity: .85; }
+  .logo-mark span:nth-child(3) { width: 50%; opacity: .7; }
+  .login h1 { font-size: 28px; line-height: 1.3; letter-spacing: -.03em; margin: 36px 0 10px; }
+  .login h1 em { font-style: normal; color: var(--brand); }
+  .login .lead { color: var(--muted); margin: 0; }
+  .login-demo { margin: 32px 0 auto; display: grid; gap: 8px; }
+  .demo-row { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 12px; background: var(--surface-2); }
+  .demo-row .posters { display: flex; gap: 6px; }
+  .demo-row .poster-sm { width: 34px; }
+  .demo-row .poster-sm .p-initial { font-size: 14px; }
+  .login-foot { margin-top: 32px; display: grid; gap: 12px; }
+  .login-note { font-size: 13px; color: var(--muted); text-align: center; margin: 0; }
+
+  /* ---------- 상단 바 ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between;
+    height: 56px; padding: 0 12px 0 18px; background: rgba(255, 255, 255, .92);
+    backdrop-filter: saturate(180%) blur(12px); -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar .logo { font-size: 18px; }
+  .topbar .logo-mark { width: 28px; height: 28px; padding: 6px 5px; border-radius: 8px; gap: 2px; }
+  .topbar .logo-mark span { height: 3px; }
+  .profile-btn { display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border-radius: 999px; font-size: 14px; font-weight: 600; }
+  .profile-btn:hover { background: var(--surface-2); }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+    font-weight: 800; font-size: 13px; color: #fff; background: var(--av, #999); flex: none;
+  }
+  .avatar.lg { width: 40px; height: 40px; font-size: 16px; }
+
+  /* ---------- 탭 내용 ---------- */
+  .tab { padding: 18px 16px calc(96px + env(safe-area-inset-bottom)); }
+  .page-title { font-size: 22px; letter-spacing: -.02em; margin: 2px 0 2px; }
+  .page-sub { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
+
+  .hint {
+    display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px;
+    background: var(--brand-weak); color: #b3154a; font-size: 13.5px; margin-bottom: 16px;
+  }
+  .hint button { color: var(--brand); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+
+  .tier-dist { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: var(--surface-2); margin: 0 0 18px; }
+  .tier-dist span { background: var(--tc); }
+
+  .tier-block { margin-bottom: 22px; }
+  .tier-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .tier-head .count { color: var(--muted); font-size: 13px; font-weight: 600; }
+  .tier-empty { font-size: 13px; color: var(--faint); padding: 12px 14px; border: 1px dashed var(--line); border-radius: 12px; }
+
+  .movie-row {
+    width: 100%; text-align: left; display: flex; align-items: center; gap: 12px;
+    padding: 10px; border-radius: var(--radius); background: var(--surface);
+    border: 1px solid var(--line); margin-bottom: 8px; transition: background .15s, box-shadow .15s;
+  }
+  .movie-row:hover { box-shadow: var(--shadow); }
+  .movie-row:active { background: var(--surface-2); }
+  .row-body { flex: 1; min-width: 0; }
+  .row-title { font-weight: 700; font-size: 15.5px; line-height: 1.35; }
+  .row-meta { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-memo { display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: #55555f; margin: 4px 0 0; white-space: nowrap; overflow: hidden; }
+  .row-memo span { overflow: hidden; text-overflow: ellipsis; }
+  .row-memo svg.i { width: 12px; height: 12px; color: var(--faint); }
+  .chev { color: var(--faint); }
+
+  .fchips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .fchip {
+    display: inline-flex; align-items: center; gap: 4px; padding: 2px 3px 2px 8px; border-radius: 999px;
+    background: var(--surface-2); border: 1px solid var(--line); font-size: 11.5px; color: #4b4b55;
+  }
+  .fchip .tier-badge { width: 17px; height: 17px; font-size: 10px; border-radius: 99px; }
+
+  .empty { text-align: center; padding: 48px 16px; color: var(--muted); }
+  .empty .big { font-size: 40px; margin-bottom: 6px; }
+  .empty p { margin: 0 0 16px; }
+
+  /* ---------- 검색 ---------- */
+  .search-box {
+    position: sticky; top: 56px; z-index: 10; background: var(--surface);
+    margin: -18px -16px 12px; padding: 14px 16px 10px;
+  }
+  .search-field {
+    display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 12px; border-radius: 12px;
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--muted);
+  }
+  .search-field:focus-within { border-color: var(--brand); background: #fff; }
+  .search-field input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 16px; color: var(--text); }
+  .search-count { font-size: 13px; color: var(--muted); margin: 8px 2px 0; }
+
+  .result { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .result:last-child { border-bottom: 0; }
+  .result-body { flex: 1; min-width: 0; }
+  .result h3 { margin: 0; font-size: 16px; line-height: 1.35; }
+  .result .meta { margin: 2px 0 4px; font-size: 12.5px; color: var(--muted); }
+  .result .plot { margin: 0 0 10px; font-size: 13px; color: #4b4b55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .result .pick-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .result .pick-label b { color: var(--text); }
+  .result .tier-pick .tp { height: 36px; font-size: 15px; }
+  .source-note { font-size: 12px; color: var(--faint); text-align: center; margin-top: 18px; }
+
+  /* ---------- 친구 ---------- */
+  .card { border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-bottom: 14px; background: var(--surface); }
+  .card h2 { font-size: 16px; margin: 0 0 4px; display: flex; align-items: center; gap: 6px; }
+  .card .desc { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+  .link-field {
+    width: 100%; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2);
+    padding: 0 12px; font-size: 13px; color: #55555f; outline: 0;
+  }
+  .text-field {
+    width: 100%; height: 46px; border-radius: 10px; border: 1px solid var(--line); background: #fff;
+    padding: 0 12px; font-size: 16px; outline: 0;
+  }
+  .text-field:focus, .link-field:focus { border-color: var(--brand); }
+  .row-btns { display: flex; gap: 8px; margin-top: 10px; }
+  .row-btns .btn { flex: 1; }
+  .form-msg { font-size: 13px; margin: 8px 2px 0; min-height: 1em; }
+  .form-msg.err { color: var(--danger); }
+  .form-msg.ok { color: #13834f; }
+
+  details.samples { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+  details.samples summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); list-style: none; display: flex; align-items: center; gap: 6px; }
+  details.samples summary::-webkit-details-marker { display: none; }
+  details.samples summary::before { content: "▸"; transition: transform .15s; display: inline-block; }
+  details.samples[open] summary::before { transform: rotate(90deg); }
+  .sample-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+  .sample-item .name { flex: 1; font-size: 14px; font-weight: 600; }
+  .sample-item .name small { display: block; font-weight: 400; color: var(--faint); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+
+  .friend-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .friend-item:first-of-type { border-top: 0; }
+  .friend-item .info { flex: 1; min-width: 0; }
+  .friend-item .info b { display: block; font-size: 15px; }
+  .friend-item .info span { font-size: 12.5px; color: var(--muted); }
+  .friend-item .actions { display: flex; gap: 6px; }
+  .match { display: inline-block; margin-top: 4px; font-size: 11.5px; font-weight: 700; color: var(--brand); background: var(--brand-weak); border-radius: 99px; padding: 1px 8px; }
+
+  /* ---------- 하단 탭바 ---------- */
+  .tabbar {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); z-index: 30;
+    width: min(100%, 480px); display: flex; background: rgba(255, 255, 255, .96);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabbar button { flex: 1; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11.5px; font-weight: 600; color: var(--faint); }
+  .tabbar button.on { color: var(--text); }
+  .tabbar button.on svg.i { color: var(--brand); }
+  .tabbar svg.i { width: 23px; height: 23px; }
+
+  /* ---------- 공유 화면 ---------- */
+  .share-banner {
+    display: flex; gap: 8px; align-items: flex-start; padding: 12px 14px; border-radius: 12px;
+    background: #f0f6ff; color: #1d4f91; font-size: 13.5px; margin-bottom: 16px;
+  }
+  .share-banner svg.i { width: 18px; height: 18px; margin-top: 1px; }
+  .share-owner { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .share-owner h2 { margin: 0; font-size: 20px; letter-spacing: -.02em; line-height: 1.3; }
+  .share-owner p { margin: 0; font-size: 13px; color: var(--muted); }
+  .share-tier { display: flex; gap: 10px; padding: 10px; border-radius: 14px; background: var(--surface-2); margin-bottom: 8px; }
+  .share-tier .tier-badge { width: 40px; height: auto; min-height: 60px; align-self: stretch; font-size: 22px; border-radius: 10px; }
+  .share-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 72px)); gap: 8px; align-content: start; }
+  .share-cell { text-align: left; }
+  .share-cell .cap { font-size: 11px; margin-top: 3px; line-height: 1.3; color: #4b4b55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .share-none { font-size: 12.5px; color: var(--faint); align-self: center; }
+  .share-cta { margin-top: 20px; display: grid; gap: 8px; }
+
+  /* ---------- 바텀시트 ---------- */
+  .sheet-backdrop { position: fixed; inset: 0; background: rgba(15, 15, 20, .42); z-index: 50; animation: fade .18s ease-out; }
+  .sheet {
+    position: fixed; z-index: 51; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: min(100%, 480px); max-height: 90vh; max-height: 90dvh; overflow-y: auto; overscroll-behavior: contain;
+    background: #fff; border-radius: 20px 20px 0 0; padding: 0 18px calc(22px + env(safe-area-inset-bottom));
+    animation: up .22s cubic-bezier(.2, .8, .2, 1);
+  }
+  @keyframes up { from { transform: translate(-50%, 40px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+  @keyframes fade { from { opacity: 0; } }
+  .sheet-head { position: sticky; top: 0; background: #fff; display: flex; justify-content: flex-end; padding: 8px 0 0; margin-right: -8px; z-index: 1; }
+  .sheet-grab { position: absolute; left: 50%; top: 8px; width: 38px; height: 4px; border-radius: 4px; background: #dcdce2; transform: translateX(-50%); }
+  .detail-top { display: flex; gap: 14px; align-items: flex-end; }
+  .detail-info { flex: 1; min-width: 0; }
+  .detail-info h2 { margin: 0 0 2px; font-size: 21px; line-height: 1.3; letter-spacing: -.02em; }
+  .detail-info .meta { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+  .detail-info .now { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .detail-plot { font-size: 14px; color: #3f3f48; margin: 14px 0 4px; }
+  .sheet-sec { margin-top: 20px; }
+  .sheet-sec h3 { font-size: 14px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+  .sheet-sec h3 small { font-weight: 500; color: var(--muted); font-size: 12px; }
+  .private { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 600; color: var(--muted); background: var(--surface-2); padding: 2px 8px; border-radius: 99px; }
+  .private svg.i { width: 12px; height: 12px; }
+  .ftier-list { display: grid; gap: 6px; }
+  .ftier { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); }
+  .ftier .avatar { width: 28px; height: 28px; font-size: 12px; }
+  .ftier .nm { flex: 1; font-weight: 600; font-size: 14px; }
+  .ftier .same { font-size: 11.5px; color: var(--brand); font-weight: 700; }
+  .ftier.none { color: var(--muted); font-size: 13px; }
+  .muted-box { font-size: 13px; color: var(--muted); padding: 12px; border-radius: 12px; background: var(--surface-2); }
+  textarea.memo {
+    width: 100%; min-height: 110px; resize: vertical; border-radius: 12px; border: 1px solid var(--line);
+    padding: 12px; font-size: 16px; line-height: 1.55; outline: 0; background: #fffdf7;
+  }
+  textarea.memo:focus { border-color: var(--brand); }
+  .memo-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--faint); }
+  .sheet .del { margin-top: 24px; }
+  .menu-list { display: grid; gap: 8px; margin-top: 16px; }
+  .sheet-title { font-size: 18px; margin: 0 0 4px; }
+
+  /* ---------- 토스트 ---------- */
+  .toast {
+    position: fixed; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px);
+    z-index: 60; max-width: min(calc(100% - 32px), 440px); width: max-content;
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px;
+    background: #22222a; color: #fff; font-size: 14px; opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s; box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+  .toast button { color: #ff8fb1; font-weight: 700; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- 로그인 화면 -->
+  <section id="screen-login" class="login" hidden>
+    <div class="logo"><span class="logo-mark"><span></span><span></span><span></span></span>티어로그</div>
+    <h1>본 영화를 <em>S부터 D까지</em><br>나만의 기록장에 정리해요</h1>
+    <p class="lead">감상 메모를 남기고, 친구의 티어와 취향을 비교해 보세요.</p>
+    <div class="login-demo" id="login-demo" aria-hidden="true"></div>
+    <div class="login-foot">
+      <button class="btn btn-primary full" data-action="login">예시 계정으로 시작하기</button>
+      <p class="login-note">예시 계정 ‘지우’로 입장해요. 실제 로그인 방식은 아직 준비 중이에요.</p>
+    </div>
+  </section>
+
+  <!-- 메인 화면 -->
+  <section id="screen-main" hidden>
+    <header class="topbar">
+      <div class="logo"><span class="logo-mark"><span></span><span></span><span></span></span>티어로그</div>
+      <button class="profile-btn" data-action="profile-menu" id="profile-btn"></button>
+    </header>
+
+    <main id="tab-list" class="tab"></main>
+
+    <main id="tab-search" class="tab" hidden>
+      <div class="search-box">
+        <label class="search-field">
+          <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="search-input" type="search" placeholder="영화 제목, 감독, 연도로 검색" autocomplete="off" aria-label="영화 검색">
+        </label>
+        <p class="search-count" id="search-count"></p>
+      </div>
+      <div id="search-results"></div>
+      <p class="source-note">시제품에서는 예시 영화 20편 안에서만 검색돼요.<br>포스터는 실제 이미지 대신 임시 디자인으로 표시돼요.</p>
+    </main>
+
+    <main id="tab-friends" class="tab" hidden></main>
+
+    <nav class="tabbar" aria-label="메뉴">
+      <button data-action="tab" data-tab="list" class="on">
+        <svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="4" rx="1.5"/><rect x="3.5" y="10" width="12" height="4" rx="1.5"/><rect x="3.5" y="16" width="7" height="4" rx="1.5"/></svg>
+        내 목록
+      </button>
+      <button data-action="tab" data-tab="search">
+        <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        검색·추가
+      </button>
+      <button data-action="tab" data-tab="friends">
+        <svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/><path d="M17 14.5c2.4 0 4.1 1.6 4.5 4.5"/></svg>
+        공유·친구
+      </button>
+    </nav>
+  </section>
+
+  <!-- 공유 화면 -->
+  <section id="screen-shared" hidden></section>
+</div>
+
+<div id="sheet-root"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toast-msg"></span><button id="toast-btn" hidden></button></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================
+     예시 자료 (기획서의 영화 20편)
+     ========================================================= */
+  const TIERS = ['S', 'A', 'B', 'C', 'D'];
+
+  const MOVIES = [
+    { id: 'm01', title: '기생충', year: 2019, director: '봉준호', plot: '일자리를 찾던 가족이 부유한 집과 얽히면서 계층 사이의 긴장과 갈등이 드러난다.', colors: ['#3a4a3f', '#a3ab93'] },
+    { id: 'm02', title: '인터스텔라', year: 2014, director: '크리스토퍼 놀란', plot: '인류가 살 새로운 터전을 찾기 위해 전직 조종사 쿠퍼가 가족을 뒤로하고 우주 탐사에 나선다.', colors: ['#0b1026', '#4a6a94'] },
+    { id: 'm03', title: '라라랜드', year: 2016, director: '데이미언 셔젤', plot: '배우를 꿈꾸는 미아와 재즈 피아니스트 세바스찬이 사랑과 각자의 꿈 사이에서 선택을 마주한다.', colors: ['#2b2d6e', '#e86fa4'] },
+    { id: 'm04', title: '센과 치히로의 행방불명', year: 2001, director: '미야자키 하야오', plot: '신비한 세계에 들어간 치히로가 부모를 구하고 집으로 돌아가기 위해 신들의 온천장에서 일한다.', colors: ['#b8432f', '#f2c46d'] },
+    { id: 'm05', title: '어벤져스: 엔드게임', year: 2019, director: '앤서니 루소, 조 루소', plot: '타노스가 초래한 참사 이후 살아남은 어벤져스가 잃어버린 이들을 되찾기 위한 마지막 도전에 나선다.', colors: ['#2a1a4a', '#c0392b'] },
+    { id: 'm06', title: '범죄도시', year: 2017, director: '강윤성', plot: '형사 마석도와 강력반이 지역을 장악하려는 장첸 일당을 소탕하기 위해 움직인다.', colors: ['#1c1c1c', '#9b2424'] },
+    { id: 'm07', title: '타이타닉', year: 1997, director: '제임스 카메론', plot: '타이타닉호에서 만난 잭과 로즈가 신분의 차이를 넘어 사랑에 빠지고 거대한 재난을 마주한다.', colors: ['#0f3057', '#8fb9d6'] },
+    { id: 'm08', title: '토이 스토리', year: 1995, director: '존 라세터', plot: '새 장난감 버즈의 등장으로 자리를 위협받던 우디가 위기 속에서 버즈와 힘을 합친다.', colors: ['#2e86de', '#f6d55c'] },
+    { id: 'm09', title: '인사이드 아웃', year: 2015, director: '피트 닥터', plot: '새로운 도시로 이사한 라일리의 마음속에서 감정들이 낯선 변화에 적응하려 애쓴다.', colors: ['#6c5ce7', '#fdcb6e'] },
+    { id: 'm10', title: '코코', year: 2017, director: '리 언크리치, 공동연출 에이드리언 몰리나', plot: '음악가를 꿈꾸는 미겔이 죽은 자들의 세계에서 조상들을 만나 가족의 비밀을 알아간다.', colors: ['#d35d3f', '#a29bfe'] },
+    { id: 'm11', title: '소울', year: 2020, director: '피트 닥터, 공동연출 켐프 파워스', plot: '뜻밖의 사고로 영혼의 세계에 간 음악 교사 조가 지구로 돌아가려다 삶의 의미를 돌아본다.', colors: ['#0c2461', '#38ada9'] },
+    { id: 'm12', title: '라따뚜이', year: 2007, director: '브래드 버드, 공동연출 얀 핀카바', plot: '요리를 사랑하는 생쥐 레미가 파리의 레스토랑에서 링귀니와 함께 요리사의 꿈에 도전한다.', colors: ['#6d4c41', '#f0a04b'] },
+    { id: 'm13', title: '월-E', year: 2008, director: '앤드루 스탠턴', plot: '오랫동안 홀로 일하던 청소 로봇 월-E가 탐사 로봇 이브를 만나 새로운 모험을 시작한다.', colors: ['#7a5c50', '#ffc94d'] },
+    { id: 'm14', title: '업', year: 2009, director: '피트 닥터, 공동연출 밥 피터슨', plot: '노인 칼이 집에 수많은 풍선을 달고 여행을 떠났다가 소년 러셀과 뜻밖의 모험을 함께한다.', colors: ['#2f9bd6', '#ff8fc9'] },
+    { id: 'm15', title: '하울의 움직이는 성', year: 2004, director: '미야자키 하야오', plot: '저주로 노인이 된 소피가 마법사 하울의 움직이는 성에 들어가 저주를 풀 길을 찾는다.', colors: ['#4f5f82', '#e3a5ad'] },
+    { id: 'm16', title: '이웃집 토토로', year: 1988, director: '미야자키 하야오', plot: '시골로 이사한 사츠키와 메이 자매가 숲의 신비로운 존재 토토로를 만나 특별한 시간을 보낸다.', colors: ['#2d6a4f', '#8fd1ab'] },
+    { id: 'm17', title: '너의 이름은.', year: 2016, director: '신카이 마코토', plot: '서로 다른 곳에 사는 소년과 소녀가 몸이 뒤바뀌는 경험을 하며 서로의 삶과 운명에 연결된다.', colors: ['#2b5876', '#ff7e5f'] },
+    { id: 'm18', title: '다크 나이트', year: 2008, director: '크리스토퍼 놀란', plot: '고담시의 범죄를 막던 배트맨이 혼란을 일으키는 조커와 맞서며 자신의 신념을 시험받는다.', colors: ['#0e0e10', '#46505e'] },
+    { id: 'm19', title: '인셉션', year: 2010, director: '크리스토퍼 놀란', plot: '타인의 꿈에서 정보를 훔치는 전문가 코브가 이번에는 꿈속에 생각을 심는 임무를 맡는다.', colors: ['#2c3e50', '#a9b4bd'] },
+    { id: 'm20', title: '그랜드 부다페스트 호텔', year: 2014, director: '웨스 앤더슨', plot: '전설적인 호텔 지배인 구스타브와 로비 보이 제로가 그림과 유산을 둘러싼 사건에 휘말린다.', colors: ['#d9486f', '#f4bccb'] }
+  ];
+  const MOVIE_BY_ID = Object.fromEntries(MOVIES.map(m => [m.id, m]));
+
+  // 예시 계정과 처음 목록 (영화 id, 티어, 감상 메모)
+  const SAMPLE_ME = { id: 'u_jiwoo', name: '지우' };
+  const SAMPLE_MY_LIST = [
+    ['m01', 'S', '두 번째 볼 때 계단 장면들이 완전히 다르게 보였다. 냄새라는 소재를 이렇게 쓸 수 있다니.'],
+    ['m02', 'S', '도킹 장면에서 숨 참고 봤다. 음악이 다 했다.'],
+    ['m04', 'S', '어릴 때 무서웠던 장면이 지금은 따뜻하게 느껴진다.'],
+    ['m03', 'A', '엔딩 시퀀스 때문에 한 티어 올림. 다시 보면 S일지도.'],
+    ['m09', 'A', ''],
+    ['m18', 'A', '조커가 나오는 장면마다 긴장감이 엄청났다.'],
+    ['m06', 'B', '극장에서 다 같이 웃으면서 봐서 더 재밌었다.'],
+    ['m07', 'B', ''],
+    ['m19', 'B', '설정은 최고인데 한 번에 이해하기는 어려웠다.'],
+    ['m08', 'C', '']
+  ];
+
+  // 가상의 친구 3명 (같은 영화에 서로 다른 티어를 매긴 예시 포함)
+  const SAMPLE_FRIENDS = [
+    { id: 'u_harin', name: '하린', tiers: { m03: 'S', m02: 'S', m09: 'S', m10: 'S', m17: 'S', m01: 'A', m04: 'A', m07: 'A', m11: 'A', m05: 'B', m18: 'B' } },
+    { id: 'u_taeo', name: '태오', tiers: { m01: 'S', m05: 'S', m06: 'S', m18: 'S', m19: 'S', m02: 'A', m12: 'A', m08: 'B', m20: 'B', m07: 'C' } },
+    { id: 'u_soyul', name: '소율', tiers: { m04: 'S', m14: 'S', m15: 'S', m16: 'S', m20: 'S', m03: 'A', m09: 'A', m13: 'A', m01: 'B', m02: 'B', m06: 'D' } }
+  ];
+
+  /* =========================================================
+     상태 저장 (이 브라우저에만 저장)
+     ========================================================= */
+  const STORE_KEY = 'tierlog.v2';
+
+  function freshState() {
+    const list = {};
+    const now = Date.now();
+    SAMPLE_MY_LIST.forEach(([id, tier, memo], i) => { list[id] = { tier, memo, addedAt: now + i }; });
+    // 친구 비교를 바로 확인할 수 있도록 예시 친구 1명(하린)을 미리 등록해 둔다
+    const harin = SAMPLE_FRIENDS[0];
+    const friends = [{ id: harin.id, name: harin.name, tiers: { ...harin.tiers } }];
+    return { v: 1, loggedIn: false, me: { ...SAMPLE_ME }, list, friends };
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      if (!s || s.v !== 1 || !s.me || typeof s.list !== 'object' || !Array.isArray(s.friends)) return null;
+      return s;
+    } catch (e) { return null; }
+  }
+
+  function saveState() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* 저장 불가 환경에서는 메모리에서만 유지 */ }
+  }
+
+  let state = loadState() || freshState();
+
+  const ui = {
+    tab: 'list',
+    query: '',
+    friendInput: '',
+    friendMsg: null,
+    sheet: null,
+    memoDraft: null,
+    shared: null,
+    lastDeleted: null
+  };
+
+  /* =========================================================
+     도구 함수
+     ========================================================= */
+  const $ = (sel) => document.querySelector(sel);
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // 받침에 따라 을/를 고르기
+  function eulReul(word) {
+    const clean = word.replace(/[^\w가-힣]+$/u, '');
+    const code = clean.charCodeAt(clean.length - 1);
+    if (code >= 0xAC00 && code <= 0xD7A3) return (code - 0xAC00) % 28 ? '을' : '를';
+    return '를';
+  }
+
+  const ICON = {
+    close: '<svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+    chev: '<svg class="i chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>',
+    back: '<svg class="i" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+    lock: '<svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+    link: '<svg class="i" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>',
+    eye: '<svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    userPlus: '<svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>',
+    info: '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>'
+  };
+
+  const AVATAR_COLORS = ['#ff7a8a', '#7a8cff', '#2fb38a', '#f2a03d', '#a66ae8', '#3fa7d6'];
+  function avatar(person, cls) {
+    let h = 0;
+    for (const ch of person.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const c = person.id === state.me.id ? '#ff2f6e' : AVATAR_COLORS[h % AVATAR_COLORS.length];
+    return `<span class="avatar ${cls || ''}" style="--av:${c}">${esc(person.name.slice(0, 1))}</span>`;
+  }
+
+  function poster(m, size) {
+    const inner = size === 'sm'
+      ? `<span class="p-initial">${esc(m.title.slice(0, 1))}</span>`
+      : `<span class="p-title">${esc(m.title)}</span><span class="p-year">${m.year}</span>`;
+    return `<div class="poster poster-${size}" style="--p1:${m.colors[0]};--p2:${m.colors[1]}" aria-hidden="true">${inner}</div>`;
+  }
+
+  function tierBadge(t, cls) {
+    return `<span class="tier-badge t-${t} ${cls || ''}" aria-label="${t} 티어">${t}</span>`;
+  }
+
+  function myEntriesByTier() {
+    const by = { S: [], A: [], B: [], C: [], D: [] };
+    Object.entries(state.list)
+      .sort((a, b) => a[1].addedAt - b[1].addedAt)
+      .forEach(([id, e]) => { if (MOVIE_BY_ID[id] && by[e.tier]) by[e.tier].push([id, e]); });
+    return by;
+  }
+
+  function friendsWhoRated(movieId) {
+    return state.friends.filter(f => f.tiers[movieId]).map(f => ({ friend: f, tier: f.tiers[movieId] }));
+  }
+
+  /* =========================================================
+     공유 링크 (링크 안에 이름과 티어만 담고, 감상 메모는 담지 않음)
+     형식: <이 파일 주소>#share=<base64url(JSON)>
+     ========================================================= */
+  function b64urlEncode(str) {
+    const bytes = new TextEncoder().encode(str);
+    let bin = '';
+    bytes.forEach(b => { bin += String.fromCharCode(b); });
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function b64urlDecode(s) {
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    const bin = atob(s);
+    return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+  }
+
+  function baseUrl() { return location.href.split('#')[0]; }
+
+  function encodeTiers(tiers) {
+    return Object.entries(tiers).map(([id, t]) => id.slice(1) + t).join('');
+  }
+
+  function shareLinkFor(person, tiers) {
+    const payload = { v: 1, i: person.id, n: person.name, t: encodeTiers(tiers) };
+    return baseUrl() + '#share=' + b64urlEncode(JSON.stringify(payload));
+  }
+
+  function myTiersInOrder() {
+    const out = {};
+    const by = myEntriesByTier();
+    TIERS.forEach(t => by[t].forEach(([id]) => { out[id] = t; }));
+    return out;
+  }
+
+  function myShareLink() { return shareLinkFor(state.me, myTiersInOrder()); }
+
+  function parseShareLink(text) {
+    const m = String(text || '').match(/share=([A-Za-z0-9_-]+)/);
+    if (!m) return null;
+    try {
+      const o = JSON.parse(b64urlDecode(m[1]));
+      if (!o || o.v !== 1) return null;
+      if (typeof o.i !== 'string' || !/^[\w-]{1,40}$/.test(o.i)) return null;
+      if (typeof o.n !== 'string' || !o.n.trim()) return null;
+      if (typeof o.t !== 'string' || !/^(\d\d[SABCD])*$/.test(o.t)) return null;
+      const tiers = {};
+      for (let k = 0; k < o.t.length; k += 3) {
+        const id = 'm' + o.t.slice(k, k + 2);
+        if (MOVIE_BY_ID[id]) tiers[id] = o.t[k + 2];
+      }
+      return { id: o.i, name: o.n.trim().slice(0, 20), tiers };
+    } catch (e) { return null; }
+  }
+
+  function registerFriend(p) {
+    if (p.id === state.me.id) return 'self';
+    const idx = state.friends.findIndex(f => f.id === p.id);
+    if (idx >= 0) {
+      state.friends[idx] = { id: p.id, name: p.name, tiers: p.tiers };
+      saveState();
+      return 'updated';
+    }
+    state.friends.push({ id: p.id, name: p.name, tiers: p.tiers });
+    saveState();
+    return 'added';
+  }
+
+  function tasteStats(friend) {
+    let overlap = 0, same = 0;
+    Object.entries(friend.tiers).forEach(([id, t]) => {
+      const mine = state.list[id];
+      if (mine) { overlap++; if (mine.tier === t) same++; }
+    });
+    return { overlap, same };
+  }
+
+  /* =========================================================
+     토스트
+     ========================================================= */
+  let toastTimer = null;
+  function toast(msg, actionLabel, onAction) {
+    const el = $('#toast'), btn = $('#toast-btn');
+    $('#toast-msg').textContent = msg;
+    if (actionLabel) {
+      btn.hidden = false;
+      btn.textContent = actionLabel;
+      btn.onclick = () => { hideToast(); onAction(); };
+    } else {
+      btn.hidden = true;
+      btn.onclick = null;
+    }
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, actionLabel ? 5000 : 2600);
+  }
+  function hideToast() { $('#toast').classList.remove('show'); }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+      ta.remove();
+      return ok;
+    }
+  }
+
+  /* =========================================================
+     화면 전환
+     ========================================================= */
+  function showScreen(name) {
+    $('#screen-login').hidden = name !== 'login';
+    $('#screen-main').hidden = name !== 'main';
+    $('#screen-shared').hidden = name !== 'shared';
+    closeSheet();
+    if (name === 'login') renderLogin();
+    if (name === 'main') renderMain();
+    if (name === 'shared') renderShared();
+    window.scrollTo(0, 0);
+  }
+
+  function setTab(tab) {
+    ui.tab = tab;
+    ['list', 'search', 'friends'].forEach(t => { $('#tab-' + t).hidden = t !== tab; });
+    document.querySelectorAll('.tabbar button').forEach(b => {
+      const on = b.dataset.tab === tab;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-current', on ? 'page' : 'false');
+    });
+    renderMain();
+    window.scrollTo(0, 0);
+  }
+
+  function route() {
+    if (location.hash.startsWith('#share=')) {
+      const p = parseShareLink(location.hash);
+      if (p) {
+        ui.shared = { data: p, mode: 'link' };
+        showScreen('shared');
+        return;
+      }
+      history.replaceState(null, '', baseUrl());
+      toast('공유 링크를 읽을 수 없어요.');
+    }
+    ui.shared = null;
+    showScreen(state.loggedIn ? 'main' : 'login');
+  }
+
+  /* =========================================================
+     로그인 화면
+     ========================================================= */
+  function renderLogin() {
+    const rows = [['S', ['m01', 'm02', 'm04']], ['A', ['m03', 'm09', 'm18']], ['B', ['m06', 'm07', 'm19']]];
+    $('#login-demo').innerHTML = rows.map(([t, ids]) => `
+      <div class="demo-row">${tierBadge(t)}<div class="posters">${ids.map(id => poster(MOVIE_BY_ID[id], 'sm')).join('')}</div></div>
+    `).join('');
+  }
+
+  /* =========================================================
+     메인 화면
+     ========================================================= */
+  function renderMain() {
+    $('#profile-btn').innerHTML = `${avatar(state.me)}${esc(state.me.name)}`;
+    $('#profile-btn').setAttribute('aria-label', `${state.me.name} 계정 메뉴`);
+    if (ui.tab === 'list') renderList();
+    if (ui.tab === 'search') renderSearch();
+    if (ui.tab === 'friends') renderFriends();
+  }
+
+  function renderList() {
+    const by = myEntriesByTier();
+    const total = Object.values(by).reduce((n, arr) => n + arr.length, 0);
+    const el = $('#tab-list');
+
+    if (total === 0) {
+      el.innerHTML = `
+        <h1 class="page-title">${esc(state.me.name)}님의 티어리스트</h1>
+        <div class="empty">
+          <div class="big">🎬</div>
+          <p>아직 정리한 영화가 없어요.<br>본 영화를 검색해서 티어를 매겨 보세요.</p>
+          <button class="btn btn-primary" data-action="tab" data-tab="search">영화 검색하기</button>
+        </div>`;
+      return;
+    }
+
+    const dist = TIERS.filter(t => by[t].length)
+      .map(t => `<span class="t-${t}" style="flex:${by[t].length}"></span>`).join('');
+
+    const hint = state.friends.length === 0 ? `
+      <div class="hint">${ICON.info}<div>친구를 등록하면 같은 영화에 친구가 매긴 티어가 여기에 함께 보여요.
+      <button data-action="tab" data-tab="friends">친구 등록하러 가기</button></div></div>` : '';
+
+    el.innerHTML = `
+      <h1 class="page-title">${esc(state.me.name)}님의 티어리스트</h1>
+      <p class="page-sub">총 ${total}편${state.friends.length ? ` · 친구 ${state.friends.length}명과 비교 중` : ''}</p>
+      <div class="tier-dist" aria-hidden="true">${dist}</div>
+      ${hint}
+      ${TIERS.map(t => `
+        <section class="tier-block" aria-label="${t} 티어">
+          <div class="tier-head">${tierBadge(t)}<span class="count">${by[t].length}편</span></div>
+          ${by[t].length ? by[t].map(([id, e]) => movieRow(id, e)).join('') : `<div class="tier-empty">아직 ${t} 티어에 영화가 없어요.</div>`}
+        </section>`).join('')}
+    `;
+  }
+
+  function movieRow(id, e) {
+    const m = MOVIE_BY_ID[id];
+    const fr = friendsWhoRated(id);
+    return `
+      <button class="movie-row" data-action="open-movie" data-id="${id}">
+        ${poster(m, 'sm')}
+        <div class="row-body">
+          <div class="row-title">${esc(m.title)}</div>
+          <div class="row-meta">${m.year} · ${esc(m.director)}</div>
+          ${e.memo ? `<p class="row-memo">${ICON.lock}<span>${esc(e.memo)}</span></p>` : ''}
+          ${fr.length ? `<div class="fchips">${fr.map(({ friend, tier }) =>
+            `<span class="fchip">${esc(friend.name)}${tierBadge(tier)}</span>`).join('')}</div>` : ''}
+        </div>
+        ${ICON.chev}
+      </button>`;
+  }
+
+  /* ----- 검색 ----- */
+  function norm(s) { return String(s).toLowerCase().replace(/[\s.:·,\-]/g, ''); }
+
+  function renderSearch() {
+    const input = $('#search-input');
+    if (input.value !== ui.query) input.value = ui.query;
+    renderSearchResults();
+  }
+
+  function renderSearchResults() {
+    const q = norm(ui.query);
+    const results = MOVIES.filter(m => !q || norm(m.title + m.director + m.year).includes(q));
+    $('#search-count').textContent = q ? `검색 결과 ${results.length}편` : `예시 영화 ${MOVIES.length}편 · 티어를 누르면 바로 내 목록에 추가돼요`;
+    const box = $('#search-results');
+    if (!results.length) {
+      box.innerHTML = `<div class="empty"><div class="big">🔍</div><p>‘${esc(ui.query)}’에 맞는 영화를 찾지 못했어요.<br>다른 제목이나 감독 이름으로 검색해 보세요.</p></div>`;
+      return;
+    }
+    box.innerHTML = results.map(m => {
+      const mine = state.list[m.id];
+      return `
+        <article class="result">
+          ${poster(m, 'res')}
+          <div class="result-body">
+            <h3>${esc(m.title)}</h3>
+            <p class="meta">${m.year} · ${esc(m.director)}</p>
+            <p class="plot">${esc(m.plot)}</p>
+            <div class="pick-label">${mine
+              ? `내 목록 · 현재 <b>${mine.tier}</b> 티어 · 다른 티어를 누르면 변경돼요`
+              : '티어를 선택해 내 목록에 추가'}</div>
+            <div class="tier-pick" role="group" aria-label="${esc(m.title)} 티어 선택">
+              ${TIERS.map(t => `<button class="tp t-${t} ${mine && mine.tier === t ? 'on' : ''}" data-action="add" data-id="${m.id}" data-tier="${t}" aria-pressed="${!!(mine && mine.tier === t)}">${t}</button>`).join('')}
+            </div>
+          </div>
+        </article>`;
+    }).join('');
+  }
+
+  /* ----- 공유·친구 ----- */
+  function renderFriends() {
+    const link = myShareLink();
+    const msg = ui.friendMsg;
+    const friendsHtml = state.friends.length
+      ? state.friends.map(f => {
+          const st = tasteStats(f);
+          return `
+            <div class="friend-item">
+              ${avatar(f, 'lg')}
+              <div class="info">
+                <b>${esc(f.name)}</b>
+                <span>평가한 영화 ${Object.keys(f.tiers).length}편 · 나와 겹치는 영화 ${st.overlap}편</span><br>
+                <span class="match">같은 티어 ${st.same}편</span>
+              </div>
+              <div class="actions">
+                <button class="btn btn-soft sm" data-action="view-friend" data-id="${esc(f.id)}">목록</button>
+                <button class="icon-btn" data-action="remove-friend" data-id="${esc(f.id)}" aria-label="${esc(f.name)} 친구 삭제">${ICON.close}</button>
+              </div>
+            </div>`;
+        }).join('')
+      : `<div class="muted-box">아직 등록한 친구가 없어요. 위에서 친구의 공유 링크를 입력해 보세요.</div>`;
+
+    $('#tab-friends').innerHTML = `
+      <h1 class="page-title">공유·친구</h1>
+      <p class="page-sub">내 티어리스트를 공유하고 친구와 취향을 비교해요.</p>
+
+      <section class="card">
+        <h2>${ICON.link} 내 공유 링크</h2>
+        <p class="desc">링크를 가진 누구나 내 티어리스트를 볼 수 있어요. 감상 메모는 링크에 담기지 않아 나만 볼 수 있어요.</p>
+        <input class="link-field" id="my-link" readonly value="${esc(link)}" aria-label="내 공유 링크" data-action="select-link">
+        <div class="row-btns">
+          <button class="btn btn-primary" data-action="copy-link">링크 복사</button>
+          <button class="btn btn-soft" data-action="preview-share">${ICON.eye} 공유 화면 보기</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>${ICON.userPlus} 친구 등록</h2>
+        <p class="desc">친구에게 받은 공유 링크를 붙여 넣으면 친구로 등록돼요.</p>
+        <input class="text-field" id="friend-input" type="url" inputmode="url" placeholder="친구의 공유 링크를 붙여 넣어 주세요" value="${esc(ui.friendInput)}" aria-label="친구 공유 링크">
+        <div class="row-btns"><button class="btn btn-primary" data-action="register-friend">친구로 등록</button></div>
+        <p class="form-msg ${msg ? msg.type : ''}" id="friend-msg" role="status">${msg ? esc(msg.text) : ''}</p>
+        <details class="samples">
+          <summary>시제품용 예시 친구 링크</summary>
+          ${SAMPLE_FRIENDS.map(f => {
+            const l = shareLinkFor(f, f.tiers);
+            return `
+              <div class="sample-item">
+                ${avatar(f)}
+                <div class="name">${esc(f.name)}<small>${esc(l)}</small></div>
+                <button class="btn btn-outline sm" data-action="fill-friend" data-id="${f.id}">입력란에 넣기</button>
+              </div>`;
+          }).join('')}
+        </details>
+      </section>
+
+      <section class="card">
+        <h2>등록한 친구 ${state.friends.length ? `<span style="color:var(--muted);font-weight:600">${state.friends.length}명</span>` : ''}</h2>
+        <p class="desc">등록한 친구의 티어는 내 목록에서 같은 영화 옆에 함께 표시돼요.</p>
+        ${friendsHtml}
+      </section>
+    `;
+  }
+
+  /* =========================================================
+     공유 화면 (감상 메모는 절대 표시하지 않음)
+     ========================================================= */
+  function renderShared() {
+    const { data, mode } = ui.shared;
+    const isMe = state.loggedIn && data.id === state.me.id;
+    const isFriend = state.loggedIn && state.friends.some(f => f.id === data.id);
+    const by = { S: [], A: [], B: [], C: [], D: [] };
+    Object.entries(data.tiers).forEach(([id, t]) => by[t].push(id));
+    const total = Object.keys(data.tiers).length;
+
+    const banner = mode === 'preview'
+      ? `${ICON.eye}<div><b>공유 화면 미리보기</b><br>다른 사람이 내 링크를 열면 이렇게 보여요. 감상 메모는 표시되지 않아요.</div>`
+      : `${ICON.lock}<div>공유된 티어리스트예요. 감상 메모는 작성자만 볼 수 있어서 이 화면에는 보이지 않아요.</div>`;
+
+    let cta = '';
+    if (!state.loggedIn) {
+      cta = `<button class="btn btn-primary full" data-action="login">나도 티어리스트 만들기</button>
+             <p class="login-note">예시 계정으로 입장한 뒤 이 친구를 등록할 수 있어요.</p>`;
+    } else if (isMe) {
+      cta = mode === 'preview' ? '' : `<p class="login-note">내 공유 링크로 연 화면이에요.</p>`;
+    } else if (!isFriend) {
+      cta = `<button class="btn btn-primary full" data-action="register-shared">${esc(data.name)}님을 친구로 등록</button>`;
+    } else if (mode === 'link') {
+      cta = `<button class="btn btn-soft full" data-action="register-shared">친구 정보 최신으로 업데이트</button>`;
+    }
+
+    $('#screen-shared').innerHTML = `
+      <header class="topbar">
+        ${state.loggedIn || mode !== 'link'
+          ? `<button class="icon-btn" data-action="shared-back" aria-label="뒤로">${ICON.back}</button>`
+          : `<div class="logo"><span class="logo-mark"><span></span><span></span><span></span></span>티어로그</div>`}
+        <span style="font-weight:700">${mode === 'preview' ? '내 공유 화면' : '공유된 티어리스트'}</span>
+        <span style="width:40px"></span>
+      </header>
+      <div class="tab" style="padding-bottom:calc(32px + env(safe-area-inset-bottom))">
+        <div class="share-banner">${banner}</div>
+        <div class="share-owner">
+          ${avatar(data, 'lg')}
+          <div><h2>${esc(data.name)}님의 영화 티어리스트</h2><p>영화 ${total}편</p></div>
+        </div>
+        ${TIERS.map(t => `
+          <div class="share-tier">
+            ${tierBadge(t)}
+            ${by[t].length
+              ? `<div class="share-grid">${by[t].map(id => {
+                  const m = MOVIE_BY_ID[id];
+                  return `<button class="share-cell" data-action="open-shared-movie" data-id="${id}" aria-label="${esc(m.title)}">${poster(m, 'md')}<div class="cap">${esc(m.title)}</div></button>`;
+                }).join('')}</div>`
+              : `<span class="share-none">이 티어에는 영화가 없어요</span>`}
+          </div>`).join('')}
+        <div class="share-cta">${cta}</div>
+      </div>
+    `;
+  }
+
+  /* =========================================================
+     바텀시트
+     ========================================================= */
+  function openSheet(kind, id) {
+    ui.sheet = { kind, id };
+    ui.memoDraft = null;
+    $('#sheet-root').innerHTML = `<div class="sheet-backdrop" data-action="close-sheet"></div><div class="sheet" role="dialog" aria-modal="true"></div>`;
+    renderSheet();
+    document.body.style.overflow = 'hidden';
+    const first = $('.sheet .icon-btn');
+    if (first) first.focus({ preventScroll: true });
+  }
+
+  function closeSheet() {
+    if (!ui.sheet) return;
+    ui.sheet = null;
+    ui.memoDraft = null;
+    $('#sheet-root').innerHTML = '';
+    document.body.style.overflow = '';
+  }
+
+  function renderSheet() {
+    const sheet = $('.sheet');
+    if (!sheet || !ui.sheet) return;
+    const scroll = sheet.scrollTop;
+    const { kind, id } = ui.sheet;
+    let html = '';
+    if (kind === 'movie') html = movieSheet(id);
+    if (kind === 'shared-movie') html = sharedMovieSheet(id);
+    if (kind === 'profile') html = profileSheet();
+    if (html === null) { closeSheet(); return; }
+    sheet.innerHTML = `<div class="sheet-head"><span class="sheet-grab"></span><button class="icon-btn" data-action="close-sheet" aria-label="닫기">${ICON.close}</button></div>` + html;
+    sheet.scrollTop = scroll;
+  }
+
+  function movieSheet(id) {
+    const m = MOVIE_BY_ID[id], e = state.list[id];
+    if (!m || !e) return null;
+    const draft = ui.memoDraft != null ? ui.memoDraft : e.memo;
+    const fr = friendsWhoRated(id);
+
+    let friendHtml;
+    if (!state.friends.length) {
+      friendHtml = `<div class="muted-box">등록한 친구가 없어요. 공유·친구 탭에서 친구를 등록하면 친구의 티어를 함께 볼 수 있어요.</div>`;
+    } else if (!fr.length) {
+      friendHtml = `<div class="muted-box">등록한 친구 ${state.friends.length}명 중 아직 이 영화를 평가한 친구가 없어요.</div>`;
+    } else {
+      friendHtml = `<div class="ftier-list">${fr.map(({ friend, tier }) => `
+        <div class="ftier">${avatar(friend)}<span class="nm">${esc(friend.name)}</span>
+          ${tier === e.tier ? '<span class="same">나와 같아요</span>' : ''}${tierBadge(tier)}</div>`).join('')}
+      </div>`;
+    }
+
+    return `
+      <div class="detail-top">
+        ${poster(m, 'lg')}
+        <div class="detail-info">
+          <h2>${esc(m.title)}</h2>
+          <p class="meta">${m.year} · ${esc(m.director)}</p>
+          <div class="now">${tierBadge(e.tier, 'big')}<span>내 티어</span></div>
+        </div>
+      </div>
+      <p class="detail-plot">${esc(m.plot)}</p>
+
+      <section class="sheet-sec">
+        <h3>티어 변경</h3>
+        <div class="tier-pick" role="group" aria-label="티어 변경">
+          ${TIERS.map(t => `<button class="tp t-${t} ${t === e.tier ? 'on' : ''}" data-action="set-tier" data-id="${id}" data-tier="${t}" aria-pressed="${t === e.tier}">${t}</button>`).join('')}
+        </div>
+      </section>
+
+      <section class="sheet-sec">
+        <h3>친구들의 티어 ${fr.length ? `<small>${state.friends.length}명 중 ${fr.length}명 평가</small>` : ''}</h3>
+        ${friendHtml}
+      </section>
+
+      <section class="sheet-sec">
+        <h3>감상 메모 <span class="private">${ICON.lock} 나만 보기</span></h3>
+        <textarea class="memo" id="memo" data-id="${id}" maxlength="500" placeholder="이 영화에 대한 나만의 감상을 남겨 보세요. 공유 화면에는 보이지 않아요.">${esc(draft)}</textarea>
+        <div class="memo-foot">
+          <span id="memo-count">${draft.length}/500</span>
+          <button class="btn btn-primary sm" id="memo-save" data-action="save-memo" data-id="${id}" ${draft === e.memo ? 'disabled' : ''}>${e.memo ? '메모 수정 저장' : '메모 저장'}</button>
+        </div>
+      </section>
+
+      <button class="btn btn-danger-ghost full del" data-action="delete" data-id="${id}">목록에서 삭제</button>
+    `;
+  }
+
+  function sharedMovieSheet(id) {
+    const m = MOVIE_BY_ID[id];
+    const d = ui.shared && ui.shared.data;
+    if (!m || !d || !d.tiers[id]) return null;
+    const isMe = state.loggedIn && d.id === state.me.id;
+    const mine = state.loggedIn && !isMe ? state.list[id] : null;
+    return `
+      <div class="detail-top">
+        ${poster(m, 'lg')}
+        <div class="detail-info">
+          <h2>${esc(m.title)}</h2>
+          <p class="meta">${m.year} · ${esc(m.director)}</p>
+          <div class="now">${tierBadge(d.tiers[id], 'big')}<span>${esc(d.name)}님의 티어</span></div>
+        </div>
+      </div>
+      <p class="detail-plot">${esc(m.plot)}</p>
+      ${mine ? `<section class="sheet-sec"><h3>내 티어</h3><div class="ftier">${avatar(state.me)}<span class="nm">${esc(state.me.name)} (나)</span>${tierBadge(mine.tier)}</div></section>` : ''}
+      <section class="sheet-sec">
+        <div class="muted-box">${ICON.lock} 감상 메모는 작성자만 볼 수 있어 공유 화면에서는 표시되지 않아요.</div>
+      </section>
+    `;
+  }
+
+  function profileSheet() {
+    return `
+      <div style="display:flex;align-items:center;gap:12px">
+        ${avatar(state.me, 'lg')}
+        <div><h2 class="sheet-title">${esc(state.me.name)}</h2><p class="page-sub" style="margin:0">예시 계정</p></div>
+      </div>
+      <p class="detail-plot">시제품의 목록과 메모는 이 브라우저에만 저장돼요. 다른 기기와의 동기화는 아직 지원하지 않아요.</p>
+      <div class="menu-list">
+        <button class="btn btn-soft full" data-action="logout">로그아웃</button>
+        <button class="btn btn-danger-ghost full" data-action="reset">예시 데이터 처음 상태로 되돌리기</button>
+      </div>
+    `;
+  }
+
+  /* =========================================================
+     동작
+     ========================================================= */
+  function addOrChange(id, tier, fromSheet) {
+    const m = MOVIE_BY_ID[id];
+    const cur = state.list[id];
+    if (cur && cur.tier === tier) {
+      toast(`이미 ${tier} 티어에 있어요.`);
+      return;
+    }
+    if (cur) {
+      const prev = cur.tier;
+      cur.tier = tier;
+      cur.addedAt = Date.now();
+      toast(`‘${m.title}’ 티어를 ${prev} → ${tier}로 바꿨어요.`);
+    } else {
+      state.list[id] = { tier, memo: '', addedAt: Date.now() };
+      toast(`‘${m.title}’${eulReul(m.title)} ${tier} 티어에 추가했어요.`);
+    }
+    saveState();
+    renderMain();
+    if (fromSheet) renderSheet();
+  }
+
+  function deleteMovie(id) {
+    const m = MOVIE_BY_ID[id];
+    ui.lastDeleted = { id, entry: state.list[id] };
+    delete state.list[id];
+    saveState();
+    closeSheet();
+    renderMain();
+    toast(`‘${m.title}’${eulReul(m.title)} 목록에서 삭제했어요.`, '되돌리기', () => {
+      if (!ui.lastDeleted) return;
+      state.list[ui.lastDeleted.id] = ui.lastDeleted.entry;
+      ui.lastDeleted = null;
+      saveState();
+      renderMain();
+      toast('삭제를 취소했어요.');
+    });
+  }
+
+  function handleRegister(p) {
+    if (!p) return { type: 'err', text: '공유 링크를 읽을 수 없어요. 링크 전체를 정확히 붙여 넣었는지 확인해 주세요.' };
+    const r = registerFriend(p);
+    if (r === 'self') return { type: 'err', text: '내 공유 링크예요. 친구의 링크를 입력해 주세요.' };
+    if (r === 'updated') return { type: 'ok', text: `이미 등록된 친구예요. ${p.name}님의 티어를 최신 정보로 업데이트했어요.` };
+    return { type: 'ok', text: `${p.name}님을 친구로 등록했어요. 내 목록에서 친구의 티어를 확인해 보세요.` };
+  }
+
+  const actions = {
+    login() {
+      state.loggedIn = true;
+      saveState();
+      if (ui.shared && ui.shared.mode === 'link') {
+        showScreen('shared');
+        toast(`${state.me.name}님으로 입장했어요.`);
+      } else {
+        ui.tab = 'list';
+        showScreen('main');
+        setTab('list');
+      }
+    },
+    tab(el) { closeSheet(); setTab(el.dataset.tab); },
+    'open-movie'(el) { openSheet('movie', el.dataset.id); },
+    'open-shared-movie'(el) { openSheet('shared-movie', el.dataset.id); },
+    'profile-menu'() { openSheet('profile'); },
+    'close-sheet'() { closeSheet(); },
+    add(el) { addOrChange(el.dataset.id, el.dataset.tier, false); },
+    'set-tier'(el) {
+      const ta = $('#memo');
+      if (ta) ui.memoDraft = ta.value;
+      addOrChange(el.dataset.id, el.dataset.tier, true);
+    },
+    'save-memo'(el) {
+      const id = el.dataset.id, e = state.list[id];
+      const ta = $('#memo');
+      if (!e || !ta) return;
+      const isEdit = !!e.memo;
+      e.memo = ta.value.trim();
+      ui.memoDraft = null;
+      saveState();
+      renderMain();
+      renderSheet();
+      toast(e.memo ? (isEdit ? '감상 메모를 수정했어요.' : '감상 메모를 저장했어요.') : '감상 메모를 비웠어요.');
+    },
+    delete(el) {
+      if (el.dataset.armed === '1') { deleteMovie(el.dataset.id); return; }
+      el.dataset.armed = '1';
+      el.classList.add('armed');
+      el.textContent = '한 번 더 누르면 삭제돼요';
+      setTimeout(() => {
+        if (!el.isConnected) return;
+        el.dataset.armed = '';
+        el.classList.remove('armed');
+        el.textContent = '목록에서 삭제';
+      }, 3000);
+    },
+    async 'copy-link'() {
+      const link = myShareLink();
+      const ok = await copyText(link);
+      if (ok) {
+        toast('내 공유 링크를 복사했어요.');
+      } else {
+        const inp = $('#my-link');
+        if (inp) { inp.focus(); inp.select(); }
+        toast('자동 복사가 안 돼요. 선택된 링크를 직접 복사해 주세요.');
+      }
+    },
+    'select-link'(el) { el.select(); },
+    'preview-share'() {
+      ui.shared = { data: { id: state.me.id, name: state.me.name, tiers: myTiersInOrder() }, mode: 'preview' };
+      showScreen('shared');
+    },
+    'fill-friend'(el) {
+      const f = SAMPLE_FRIENDS.find(x => x.id === el.dataset.id);
+      if (!f) return;
+      ui.friendInput = shareLinkFor(f, f.tiers);
+      ui.friendMsg = null;
+      const inp = $('#friend-input');
+      inp.value = ui.friendInput;
+      $('#friend-msg').textContent = '';
+      $('#friend-msg').className = 'form-msg';
+      inp.focus();
+    },
+    'register-friend'() {
+      const inp = $('#friend-input');
+      const val = inp.value.trim();
+      if (!val) {
+        ui.friendMsg = { type: 'err', text: '친구의 공유 링크를 입력해 주세요.' };
+      } else {
+        ui.friendMsg = handleRegister(parseShareLink(val));
+        if (ui.friendMsg.type === 'ok') ui.friendInput = '';
+        else ui.friendInput = val;
+      }
+      renderFriends();
+      if (ui.friendMsg.type === 'ok') toast(ui.friendMsg.text.split('.')[0] + '.');
+    },
+    'remove-friend'(el) {
+      const f = state.friends.find(x => x.id === el.dataset.id);
+      if (!f) return;
+      if (!confirm(`${f.name}님을 친구 목록에서 삭제할까요?`)) return;
+      state.friends = state.friends.filter(x => x.id !== f.id);
+      ui.friendMsg = null;
+      saveState();
+      renderFriends();
+      toast(`${f.name}님을 친구 목록에서 삭제했어요.`);
+    },
+    'view-friend'(el) {
+      const f = state.friends.find(x => x.id === el.dataset.id);
+      if (!f) return;
+      ui.shared = { data: f, mode: 'friend' };
+      showScreen('shared');
+    },
+    'register-shared'() {
+      const res = handleRegister(ui.shared.data);
+      toast(res.text);
+      renderShared();
+    },
+    'shared-back'() {
+      const mode = ui.shared && ui.shared.mode;
+      ui.shared = null;
+      if (mode === 'link') history.replaceState(null, '', baseUrl());
+      if (!state.loggedIn) { showScreen('login'); return; }
+      showScreen('main');
+      setTab(mode === 'link' ? 'list' : 'friends');
+    },
+    logout() {
+      state.loggedIn = false;
+      saveState();
+      ui.tab = 'list';
+      ui.shared = null;
+      showScreen('login');
+      toast('로그아웃했어요. 목록은 이 브라우저에 그대로 남아 있어요.');
+    },
+    reset() {
+      if (!confirm('목록, 감상 메모, 등록한 친구를 모두 처음 예시 상태로 되돌릴까요?')) return;
+      state = freshState();
+      state.loggedIn = true;
+      ui.friendInput = '';
+      ui.friendMsg = null;
+      ui.query = '';
+      saveState();
+      showScreen('main');
+      setTab('list');
+      toast('예시 데이터를 처음 상태로 되돌렸어요.');
+    }
+  };
+
+  document.addEventListener('click', (ev) => {
+    const el = ev.target.closest('[data-action]');
+    if (!el) return;
+    const fn = actions[el.dataset.action];
+    if (fn) fn(el, ev);
+  });
+
+  document.addEventListener('input', (ev) => {
+    const t = ev.target;
+    if (t.id === 'search-input') {
+      ui.query = t.value;
+      renderSearchResults();
+    } else if (t.id === 'friend-input') {
+      ui.friendInput = t.value;
+    } else if (t.id === 'memo') {
+      ui.memoDraft = t.value;
+      const e = state.list[t.dataset.id];
+      $('#memo-count').textContent = `${t.value.length}/500`;
+      $('#memo-save').disabled = !e || t.value.trim() === e.memo;
+    }
+  });
+
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && ui.sheet) closeSheet();
+    if (ev.key === 'Enter' && ev.target.id === 'friend-input') actions['register-friend']();
+  });
+
+  window.addEventListener('hashchange', route);
+
+  route();
+})();
+</script>
+</body>
+</html>
